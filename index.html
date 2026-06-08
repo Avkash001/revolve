@@ -714,7 +714,7 @@ function buildCard(t){
   }
   const timeTag=t.repeat_time?'<span class="time-tag">'+t.repeat_time+'</span>':'';
   el.onclick=e=>{
-    if(e.target.closest('.task-check')||e.target.closest('.status-chip')||e.target.closest('.task-actions')||e.target.closest('.task-name-input'))return;
+    if(e.target.closest('.task-check')||e.target.closest('.status-chip')||e.target.closest('.task-actions')||e.target.closest('.task-name-input')||e.target.closest('.task-expand'))return;
     openEditModal(t.id);
   };
   el.innerHTML=
