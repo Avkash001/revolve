@@ -2,10 +2,11 @@
   "name": "Revolve",
   "short_name": "Revolve",
   "description": "Daily work tracker by Apex Standard",
-  "start_url": "/",
+  "start_url": "/revolve/",
+  "scope": "/revolve/",
   "display": "standalone",
-  "background_color": "#0a0a0f",
-  "theme_color": "#0a0a0f",
+  "background_color": "#080a0f",
+  "theme_color": "#080a0f",
   "orientation": "portrait-primary",
   "icons": [
     {
