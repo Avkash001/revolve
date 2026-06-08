@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Revolve" />
+  <meta name="theme-color" content="#0a0a0f" />
+  <title>Revolve</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #111118;
+      --surface2: #1a1a24;
+      --surface3: #22222f;
+      --border: #2a2a3a;
+      --border-light: #3a3a50;
+      --text: #e8e8f0;
+      --text-dim: #8888a8;
+      --text-muted: #44445a;
+      --accent: #7c6af7;
+      --accent-glow: rgba(124, 106, 247, 0.15);
+      --accent-dim: #5a4fd4;
+      --green: #4ade80;
+      --green-dim: rgba(74, 222, 128, 0.1);
+      --amber: #fbbf24;
+      --amber-dim: rgba(251, 191, 36, 0.1);
+      --red: #f87171;
+      --red-dim: rgba(248, 113, 113, 0.1);
+      --blue: #60a5fa;
+      --blue-dim: rgba(96, 165, 250, 0.1);
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Background texture */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% -10%, rgba(124,106,247,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 110%, rgba(96,165,250,0.05) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .app {
+      position: relative;
+      z-index: 1;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 24px 16px 80px;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 32px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      font-family: 'Syne', sans-serif;
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--text);
+    }
+
+    .logo span {
+      color: var(--accent);
+    }
+
+    .header-meta {
+      text-align: right;
+    }
+
+    .date-display {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: var(--text-dim);
+      letter-spacing: 0.05em;
+    }
+
+    .task-count {
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent);
+      margin-top: 2px;
+    }
+
+    /* ── TABS ── */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 24px;
+      background: var(--surface);
+      padding: 4px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+
+    .tab {
+      flex: 1;
+      padding: 8px 12px;
+      border: none;
+      background: transparent;
+      color: var(--text-dim);
+      font-family: 'Syne', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab:hover { color: var(--text); }
+
+    .tab.active {
+      background: var(--surface3);
+      color: var(--text);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+
+    /* ── PANELS ── */
+    .panel { display: none; animation: fadeIn 0.2s ease; }
+    .panel.active { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── ADD TASK BAR ── */
+    .add-task-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .input-field {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .input-field::placeholder { color: var(--text-muted); }
+
+    .input-field:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .btn {
+      padding: 10px 18px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-family: 'Syne', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-dim);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(124,106,247,0.3);
+    }
+
+    .btn-ghost {
+      background: var(--surface2);
+      color: var(--text-dim);
+      border: 1px solid var(--border);
+    }
+
+    .btn-ghost:hover {
+      color: var(--text);
+      border-color: var(--border-light);
+    }
+
+    .btn-danger {
+      background: var(--red-dim);
+      color: var(--red);
+      border: 1px solid rgba(248,113,113,0.2);
+    }
+
+    .btn-danger:hover { background: rgba(248,113,113,0.2); }
+
+    .btn-sm {
+      padding: 5px 10px;
+      font-size: 10px;
+    }
+
+    .btn-icon {
+      padding: 6px 8px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-radius: 6px;
+      transition: all 0.15s;
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .btn-icon:hover { color: var(--text); background: var(--surface3); }
+
+    /* ── TASK CARD ── */
+    .task-list { display: flex; flex-direction: column; gap: 8px; }
+
+    .task-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      animation: slideIn 0.25s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-8px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .task-card:hover {
+      border-color: var(--border-light);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+    }
+
+    .task-card.completed {
+      opacity: 0.55;
+      border-color: var(--border);
+    }
+
+    .task-card.recurring {
+      border-left: 3px solid var(--accent);
+    }
+
+    .task-main {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+    }
+
+    .task-check {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid var(--border-light);
+      background: transparent;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      font-size: 10px;
+      color: transparent;
+    }
+
+    .task-check:hover {
+      border-color: var(--green);
+      color: var(--green);
+    }
+
+    .task-card.completed .task-check {
+      background: var(--green-dim);
+      border-color: var(--green);
+      color: var(--green);
+    }
+
+    .task-name {
+      flex: 1;
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .task-card.completed .task-name {
+      text-decoration: line-through;
+      color: var(--text-dim);
+    }
+
+    .task-name-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--accent);
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      outline: none;
+      padding: 0 2px 2px;
+    }
+
+    .status-badge {
+      font-family: 'Syne', sans-serif;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 20px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .status-select {
+      appearance: none;
+      background: transparent;
+      border: none;
+      font-family: 'Syne', sans-serif;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 20px;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .status-in-progress    { background: var(--amber-dim); color: var(--amber); }
+    .status-sent           { background: var(--blue-dim);  color: var(--blue); }
+    .status-needs-revision { background: var(--red-dim);   color: var(--red); }
+    .status-completed      { background: var(--green-dim); color: var(--green); }
+    .status-on-hold        { background: var(--surface3);  color: var(--text-dim); }
+
+    .task-actions {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    /* ── TASK EXPAND ── */
+    .task-expand {
+      border-top: 1px solid var(--border);
+      padding: 12px 14px;
+      background: var(--surface2);
+      display: none;
+    }
+
+    .task-expand.open { display: block; animation: fadeIn 0.15s ease; }
+
+    .expand-label {
+      font-family: 'Syne', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .notes-textarea {
+      width: 100%;
+      background: var(--surface3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      resize: vertical;
+      min-height: 72px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .notes-textarea::placeholder { color: var(--text-muted); }
+
+    .notes-textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-glow);
+    }
+
+    .expand-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 10px;
+      gap: 8px;
+    }
+
+    /* ── DAILY NOTES ── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      margin-top: 28px;
+    }
+
+    .section-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .section-line {
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+      margin-left: 12px;
+    }
+
+    .daily-notes-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+    }
+
+    /* ── ARCHIVE ── */
+    .archive-day {
+      margin-bottom: 24px;
+    }
+
+    .archive-day-header {
+      font-family: 'Syne', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 10px;
+    }
+
+    .archive-task {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      margin-bottom: 6px;
+      font-size: 12px;
+    }
+
+    .archive-task-name {
+      flex: 1;
+      color: var(--text-dim);
+    }
+
+    /* ── CONFIG PANEL ── */
+    .config-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .config-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .config-desc {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-bottom: 14px;
+      line-height: 1.6;
+    }
+
+    .config-field {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    /* ── SETUP SCREEN ── */
+    .setup-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .setup-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 36px;
+      max-width: 480px;
+      width: 100%;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .setup-logo {
+      font-family: 'Syne', sans-serif;
+      font-size: 32px;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .setup-logo span { color: var(--accent); }
+
+    .setup-tagline {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-bottom: 28px;
+      line-height: 1.6;
+    }
+
+    .setup-step {
+      margin-bottom: 18px;
+    }
+
+    .setup-label {
+      font-family: 'Syne', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+    }
+
+    .setup-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      line-height: 1.5;
+    }
+
+    .setup-hint a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .setup-hint a:hover { text-decoration: underline; }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--text-muted);
+    }
+
+    .empty-icon { font-size: 32px; margin-bottom: 12px; }
+
+    .empty-text {
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-dim);
+      margin-bottom: 4px;
+    }
+
+    .empty-sub { font-size: 11px; }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--surface3);
+      border: 1px solid var(--border-light);
+      color: var(--text);
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-family: 'Syne', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      z-index: 50;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      white-space: nowrap;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── RECURRING BADGE ── */
+    .recurring-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+    }
+
+    /* ── LOADING ── */
+    .loading-bar {
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--blue), var(--accent));
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 2px;
+      margin-bottom: 24px;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--border-light); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 480px) {
+      .app { padding: 16px 12px 80px; }
+      .logo { font-size: 22px; }
+      .task-main { gap: 8px; padding: 10px 12px; }
+      .status-select { display: none; }
+      .status-select.mobile-show { display: block; width: 100%; margin-top: 8px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- SETUP OVERLAY -->
+<div class="setup-overlay" id="setupOverlay">
+  <div class="setup-card">
+    <div class="setup-logo">Re<span>volve</span></div>
+    <p class="setup-tagline">Your daily work tracker. Connect Supabase to sync tasks across all your devices.</p>
+
+    <div class="setup-step">
+      <div class="setup-label">Supabase URL</div>
+      <input class="input-field" id="setupUrl" placeholder="https://xxxx.supabase.co" />
+      <div class="setup-hint">
+        Found in your Supabase project → Settings → API.<br>
+        Don't have a project? <a href="https://supabase.com" target="_blank">Create one free at supabase.com</a>
+      </div>
+    </div>
+
+    <div class="setup-step">
+      <div class="setup-label">Supabase Anon Key</div>
+      <input class="input-field" id="setupKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." />
+      <div class="setup-hint">
+        Found in the same API settings page under "anon public" key.
+      </div>
+    </div>
+
+    <div style="margin-top: 8px; padding: 14px; background: var(--surface2); border-radius: var(--radius-sm); border: 1px solid var(--border); margin-bottom: 20px;">
+      <div style="font-family:'Syne',sans-serif; font-size:11px; font-weight:700; color:var(--accent); margin-bottom:6px; letter-spacing:0.05em;">ONE-TIME DATABASE SETUP</div>
+      <div style="font-size:11px; color:var(--text-dim); line-height:1.7;">Run this SQL in your Supabase SQL Editor:<br>
+      <code style="display:block; margin-top:8px; background:var(--surface3); padding:10px; border-radius:6px; font-size:10px; color:var(--text); line-height:1.8; white-space:pre-wrap;">CREATE TABLE tasks (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  name text NOT NULL,
+  status text DEFAULT 'in-progress',
+  completed boolean DEFAULT false,
+  recurring boolean DEFAULT false,
+  notes text DEFAULT '',
+  sort_order integer DEFAULT 0,
+  date text NOT NULL,
+  archived boolean DEFAULT false,
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE daily_notes (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  date text UNIQUE NOT NULL,
+  notes text DEFAULT '',
+  created_at timestamptz DEFAULT now()
+);
+
+ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE daily_notes ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow all" ON tasks FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all" ON daily_notes FOR ALL USING (true) WITH CHECK (true);</code>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" style="width:100%;" onclick="saveSetup()">Connect & Launch</button>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div class="app" id="mainApp" style="display:none;">
+
+  <div class="header">
+    <div class="logo">Re<span>volve</span></div>
+    <div class="header-meta">
+      <div class="date-display" id="dateDisplay"></div>
+      <div class="task-count" id="taskCount"></div>
+    </div>
+  </div>
+
+  <div id="loadingBar" class="loading-bar" style="display:none;"></div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('today')">Today</button>
+    <button class="tab" onclick="switchTab('archive')">Archive</button>
+    <button class="tab" onclick="switchTab('settings')">Settings</button>
+  </div>
+
+  <!-- TODAY PANEL -->
+  <div class="panel active" id="panel-today">
+    <div class="add-task-bar">
+      <input class="input-field" id="newTaskInput" placeholder="Add a task..." onkeydown="if(event.key==='Enter') addTask()" />
+      <button class="btn btn-primary" onclick="addTask()">Add</button>
+    </div>
+
+    <div class="task-list" id="taskList">
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">○</div>
+        <div class="empty-text">No tasks yet</div>
+        <div class="empty-sub">Add one above or wait for recurring tasks</div>
+      </div>
+    </div>
+
+    <div class="section-header" style="margin-top:32px;">
+      <div class="section-title">Daily Notes</div>
+      <div class="section-line"></div>
+    </div>
+    <div class="daily-notes-box">
+      <textarea class="notes-textarea" id="dailyNotes" placeholder="Jot down anything for today — timestamps, reminders, observations..." style="min-height:100px;" oninput="saveDailyNotes()"></textarea>
+    </div>
+  </div>
+
+  <!-- ARCHIVE PANEL -->
+  <div class="panel" id="panel-archive">
+    <div id="archiveList">
+      <div class="empty-state">
+        <div class="empty-icon">◫</div>
+        <div class="empty-text">No archived days yet</div>
+        <div class="empty-sub">Archive today's tasks to see them here</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS PANEL -->
+  <div class="panel" id="panel-settings">
+    <div class="config-section">
+      <div class="config-title">Connection</div>
+      <div class="config-desc">Your Supabase credentials. Change these if you need to reconnect.</div>
+      <div class="setup-label" style="margin-bottom:5px;">Supabase URL</div>
+      <input class="input-field" id="settingsUrl" style="margin-bottom:10px;" />
+      <div class="setup-label" style="margin-bottom:5px;">Anon Key</div>
+      <input class="input-field" id="settingsKey" style="margin-bottom:14px;" />
+      <button class="btn btn-primary btn-sm" onclick="updateConnection()">Update Connection</button>
+    </div>
+
+    <div class="config-section">
+      <div class="config-title">Archive Today</div>
+      <div class="config-desc">Move all of today's tasks to the archive. Recurring tasks will reappear fresh tomorrow.</div>
+      <button class="btn btn-ghost btn-sm" onclick="archiveToday()">Archive Today's Tasks</button>
+    </div>
+
+    <div class="config-section">
+      <div class="config-title">About</div>
+      <div class="config-desc" style="margin-bottom:0;">
+        <strong style="color:var(--text);">Revolve</strong> — Daily work tracker<br>
+        Syncs via Supabase · Works offline · PWA-ready<br>
+        <span style="color:var(--accent);">●</span> Recurring: Check on Embroidery Files, Check on Transfer Files
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════
+const RECURRING_TASKS = [
+  'Check on Embroidery Files',
+  'Check on Transfer Files'
+];
+
+const STATUS_OPTIONS = [
+  { value: 'in-progress',     label: 'In Progress',            cls: 'status-in-progress' },
+  { value: 'sent',            label: 'Sent — Waiting on Client', cls: 'status-sent' },
+  { value: 'needs-revision',  label: 'Needs Revision',         cls: 'status-needs-revision' },
+  { value: 'completed',       label: 'Completed',              cls: 'status-completed' },
+  { value: 'on-hold',         label: 'On Hold',                cls: 'status-on-hold' },
+];
+
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let SUPABASE_URL = '';
+let SUPABASE_KEY = '';
+let tasks = [];
+let dailyNotesTimer = null;
+let expandedTasks = new Set();
+
+const today = () => new Date().toISOString().split('T')[0];
+
+// ═══════════════════════════════════════════════════════
+// SUPABASE HELPERS
+// ═══════════════════════════════════════════════════════
+async function sbFetch(path, options = {}) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    ...options,
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': options.prefer || '',
+      ...(options.headers || {})
+    }
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(err);
+  }
+  if (res.status === 204) return null;
+  return res.json();
+}
+
+async function getTasks(date) {
+  return sbFetch(`tasks?date=eq.${date}&archived=eq.false&order=sort_order.asc,created_at.asc`);
+}
+
+async function createTask(task) {
+  return sbFetch('tasks', {
+    method: 'POST',
+    prefer: 'return=representation',
+    body: JSON.stringify(task)
+  });
+}
+
+async function updateTask(id, updates) {
+  return sbFetch(`tasks?id=eq.${id}`, {
+    method: 'PATCH',
+    prefer: 'return=representation',
+    body: JSON.stringify(updates)
+  });
+}
+
+async function deleteTask(id) {
+  return sbFetch(`tasks?id=eq.${id}`, { method: 'DELETE' });
+}
+
+async function getArchivedDays() {
+  return sbFetch(`tasks?archived=eq.true&order=date.desc&select=date,name,status,completed,notes`);
+}
+
+async function getDailyNotes(date) {
+  const rows = await sbFetch(`daily_notes?date=eq.${date}`);
+  return rows && rows.length ? rows[0] : null;
+}
+
+async function upsertDailyNotes(date, notes) {
+  return sbFetch('daily_notes', {
+    method: 'POST',
+    prefer: 'return=representation,resolution=merge-duplicates',
+    headers: { 'Prefer': 'return=representation,resolution=merge-duplicates' },
+    body: JSON.stringify({ date, notes })
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// SETUP
+// ═══════════════════════════════════════════════════════
+function saveSetup() {
+  const url = document.getElementById('setupUrl').value.trim().replace(/\/$/, '');
+  const key = document.getElementById('setupKey').value.trim();
+  if (!url || !key) { showToast('Please fill in both fields'); return; }
+  SUPABASE_URL = url;
+  SUPABASE_KEY = key;
+  localStorage.setItem('revolve_url', url);
+  localStorage.setItem('revolve_key', key);
+  launchApp();
+}
+
+function loadCredentials() {
+  SUPABASE_URL = localStorage.getItem('revolve_url') || '';
+  SUPABASE_KEY = localStorage.getItem('revolve_key') || '';
+  return !!(SUPABASE_URL && SUPABASE_KEY);
+}
+
+// ═══════════════════════════════════════════════════════
+// LAUNCH
+// ═══════════════════════════════════════════════════════
+async function launchApp() {
+  document.getElementById('setupOverlay').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+
+  // Update settings fields
+  document.getElementById('settingsUrl').value = SUPABASE_URL;
+  document.getElementById('settingsKey').value = SUPABASE_KEY;
+
+  // Date display
+  const now = new Date();
+  document.getElementById('dateDisplay').textContent = now.toLocaleDateString('en-US', {
+    weekday: 'long', month: 'long', day: 'numeric'
+  }).toUpperCase();
+
+  showLoading(true);
+
+  try {
+    await ensureRecurringTasks();
+    await loadTasks();
+    await loadDailyNotes();
+  } catch (e) {
+    showToast('Connection error — check your credentials');
+    console.error(e);
+  }
+
+  showLoading(false);
+}
+
+// ═══════════════════════════════════════════════════════
+// RECURRING TASKS
+// ═══════════════════════════════════════════════════════
+async function ensureRecurringTasks() {
+  const existing = await getTasks(today());
+  const existingNames = existing.map(t => t.name);
+
+  for (const name of RECURRING_TASKS) {
+    if (!existingNames.includes(name)) {
+      await createTask({
+        name,
+        status: 'in-progress',
+        completed: false,
+        recurring: true,
+        notes: '',
+        sort_order: 0,
+        date: today(),
+        archived: false
+      });
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// LOAD & RENDER TASKS
+// ═══════════════════════════════════════════════════════
+async function loadTasks() {
+  tasks = await getTasks(today());
+  renderTasks();
+  updateTaskCount();
+}
+
+function renderTasks() {
+  const list = document.getElementById('taskList');
+  const empty = document.getElementById('emptyState');
+
+  // Sort: incomplete first (recurring first), then completed
+  const sorted = [...tasks].sort((a, b) => {
+    if (a.completed !== b.completed) return a.completed ? 1 : -1;
+    if (a.recurring !== b.recurring) return a.recurring ? -1 : 1;
+    return (a.sort_order || 0) - (b.sort_order || 0);
+  });
+
+  if (!sorted.length) {
+    empty.style.display = 'block';
+    // Remove all task cards
+    list.querySelectorAll('.task-card').forEach(el => el.remove());
+    return;
+  }
+
+  empty.style.display = 'none';
+
+  // Remove old cards
+  list.querySelectorAll('.task-card').forEach(el => el.remove());
+
+  sorted.forEach(task => {
+    const card = buildTaskCard(task);
+    list.appendChild(card);
+  });
+}
+
+function buildTaskCard(task) {
+  const card = document.createElement('div');
+  card.className = `task-card${task.completed ? ' completed' : ''}${task.recurring ? ' recurring' : ''}`;
+  card.dataset.id = task.id;
+
+  const statusCls = STATUS_OPTIONS.find(s => s.value === task.status)?.cls || 'status-in-progress';
+
+  const statusOptions = STATUS_OPTIONS.map(s =>
+    `<option value="${s.value}" ${task.status === s.value ? 'selected' : ''}>${s.label}</option>`
+  ).join('');
+
+  const isExpanded = expandedTasks.has(task.id);
+
+  card.innerHTML = `
+    <div class="task-main">
+      <button class="task-check" onclick="toggleComplete('${task.id}')" title="Mark complete">✓</button>
+      ${task.recurring ? '<div class="recurring-dot" title="Recurring task"></div>' : ''}
+      <span class="task-name" ondblclick="startEditName('${task.id}')">${escHtml(task.name)}</span>
+      <select class="status-select ${statusCls}" onchange="updateStatus('${task.id}', this.value)" title="Status">
+        ${statusOptions}
+      </select>
+      <div class="task-actions">
+        <button class="btn-icon" onclick="toggleExpand('${task.id}')" title="Notes">${isExpanded ? '▲' : '▼'}</button>
+        <button class="btn-icon" onclick="archiveOne('${task.id}')" title="Archive" style="font-size:12px;">◫</button>
+        <button class="btn-icon" onclick="removeTask('${task.id}')" title="Delete" style="color:var(--red-dim);">✕</button>
+      </div>
+    </div>
+    <div class="task-expand ${isExpanded ? 'open' : ''}" id="expand-${task.id}">
+      <div class="expand-label">Task Notes</div>
+      <textarea class="notes-textarea" placeholder="Add notes, timestamps, details..." oninput="queueSaveNotes('${task.id}', this.value)">${escHtml(task.notes || '')}</textarea>
+      <div class="expand-row">
+        <span style="font-size:10px; color:var(--text-muted);">Double-click task name to rename</span>
+      </div>
+    </div>
+  `;
+
+  // Apply status color to select
+  const sel = card.querySelector('.status-select');
+  applyStatusColor(sel, task.status);
+  sel.addEventListener('change', function() { applyStatusColor(this, this.value); });
+
+  return card;
+}
+
+function applyStatusColor(sel, value) {
+  STATUS_OPTIONS.forEach(s => sel.classList.remove(s.cls));
+  const found = STATUS_OPTIONS.find(s => s.value === value);
+  if (found) sel.classList.add(found.cls);
+}
+
+function escHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function updateTaskCount() {
+  const done = tasks.filter(t => t.completed).length;
+  const total = tasks.length;
+  document.getElementById('taskCount').textContent = `${done}/${total} done`;
+}
+
+// ═══════════════════════════════════════════════════════
+// TASK ACTIONS
+// ═══════════════════════════════════════════════════════
+async function addTask() {
+  const input = document.getElementById('newTaskInput');
+  const name = input.value.trim();
+  if (!name) return;
+  input.value = '';
+
+  const maxOrder = tasks.reduce((m, t) => Math.max(m, t.sort_order || 0), 0);
+
+  try {
+    const [newTask] = await createTask({
+      name,
+      status: 'in-progress',
+      completed: false,
+      recurring: false,
+      notes: '',
+      sort_order: maxOrder + 1,
+      date: today(),
+      archived: false
+    });
+    tasks.push(newTask);
+    renderTasks();
+    updateTaskCount();
+    showToast('Task added');
+  } catch (e) {
+    showToast('Error adding task');
+    console.error(e);
+  }
+}
+
+async function toggleComplete(id) {
+  const task = tasks.find(t => t.id === id);
+  if (!task) return;
+  const newVal = !task.completed;
+  task.completed = newVal;
+
+  // If completed, move to bottom (rotate to back)
+  if (newVal) {
+    const maxOrder = tasks.reduce((m, t) => Math.max(m, t.sort_order || 0), 0);
+    task.sort_order = maxOrder + 1;
+  }
+
+  renderTasks();
+  updateTaskCount();
+
+  try {
+    await updateTask(id, { completed: newVal, sort_order: task.sort_order });
+  } catch (e) {
+    // Revert
+    task.completed = !newVal;
+    renderTasks();
+    showToast('Error updating task');
+  }
+}
+
+async function updateStatus(id, value) {
+  const task = tasks.find(t => t.id === id);
+  if (!task) return;
+  task.status = value;
+  try {
+    await updateTask(id, { status: value });
+  } catch (e) {
+    showToast('Error updating status');
+  }
+}
+
+let noteTimers = {};
+function queueSaveNotes(id, value) {
+  clearTimeout(noteTimers[id]);
+  noteTimers[id] = setTimeout(async () => {
+    const task = tasks.find(t => t.id === id);
+    if (task) task.notes = value;
+    try {
+      await updateTask(id, { notes: value });
+    } catch (e) {
+      console.error('Error saving notes', e);
+    }
+  }, 800);
+}
+
+async function removeTask(id) {
+  tasks = tasks.filter(t => t.id !== id);
+  renderTasks();
+  updateTaskCount();
+  try {
+    await deleteTask(id);
+    showToast('Task removed');
+  } catch (e) {
+    showToast('Error removing task');
+    await loadTasks();
+  }
+}
+
+async function archiveOne(id) {
+  tasks = tasks.filter(t => t.id !== id);
+  renderTasks();
+  updateTaskCount();
+  try {
+    await updateTask(id, { archived: true });
+    showToast('Task archived');
+  } catch (e) {
+    showToast('Error archiving task');
+    await loadTasks();
+  }
+}
+
+function toggleExpand(id) {
+  const expand = document.getElementById(`expand-${id}`);
+  if (!expand) return;
+  if (expandedTasks.has(id)) {
+    expandedTasks.delete(id);
+    expand.classList.remove('open');
+    expand.closest('.task-card').querySelector('.btn-icon[title="Notes"]').textContent = '▼';
+  } else {
+    expandedTasks.add(id);
+    expand.classList.add('open');
+    expand.closest('.task-card').querySelector('.btn-icon[title="Notes"]').textContent = '▲';
+  }
+}
+
+function startEditName(id) {
+  const card = document.querySelector(`.task-card[data-id="${id}"]`);
+  if (!card) return;
+  const nameSpan = card.querySelector('.task-name');
+  const current = nameSpan.textContent;
+  const input = document.createElement('input');
+  input.className = 'task-name-input';
+  input.value = current;
+  nameSpan.replaceWith(input);
+  input.focus();
+  input.select();
+
+  async function finish() {
+    const newName = input.value.trim() || current;
+    const span = document.createElement('span');
+    span.className = 'task-name';
+    span.textContent = newName;
+    span.ondblclick = () => startEditName(id);
+    input.replaceWith(span);
+    if (newName !== current) {
+      const task = tasks.find(t => t.id === id);
+      if (task) task.name = newName;
+      try { await updateTask(id, { name: newName }); }
+      catch (e) { showToast('Error renaming task'); }
+    }
+  }
+
+  input.onblur = finish;
+  input.onkeydown = e => { if (e.key === 'Enter') input.blur(); if (e.key === 'Escape') { input.value = current; input.blur(); } };
+}
+
+// ═══════════════════════════════════════════════════════
+// DAILY NOTES
+// ═══════════════════════════════════════════════════════
+async function loadDailyNotes() {
+  const row = await getDailyNotes(today());
+  if (row) document.getElementById('dailyNotes').value = row.notes || '';
+}
+
+function saveDailyNotes() {
+  clearTimeout(dailyNotesTimer);
+  dailyNotesTimer = setTimeout(async () => {
+    const notes = document.getElementById('dailyNotes').value;
+    try { await upsertDailyNotes(today(), notes); }
+    catch (e) { console.error('Error saving daily notes', e); }
+  }, 800);
+}
+
+// ═══════════════════════════════════════════════════════
+// ARCHIVE
+// ═══════════════════════════════════════════════════════
+async function archiveToday() {
+  if (!confirm('Archive all of today\'s tasks? Recurring tasks will reappear fresh tomorrow.')) return;
+
+  try {
+    // Archive all non-recurring tasks for today
+    for (const task of tasks) {
+      await updateTask(task.id, { archived: true });
+    }
+    tasks = [];
+    renderTasks();
+    updateTaskCount();
+    showToast('Today archived');
+    await loadArchive();
+  } catch (e) {
+    showToast('Error archiving');
+    console.error(e);
+  }
+}
+
+async function loadArchive() {
+  const list = document.getElementById('archiveList');
+  list.innerHTML = '<div class="loading-bar"></div>';
+
+  try {
+    const rows = await getArchivedDays();
+
+    if (!rows || !rows.length) {
+      list.innerHTML = `<div class="empty-state">
+        <div class="empty-icon">◫</div>
+        <div class="empty-text">No archived tasks yet</div>
+        <div class="empty-sub">Archive today's tasks from the Settings tab</div>
+      </div>`;
+      return;
+    }
+
+    // Group by date
+    const byDate = {};
+    rows.forEach(row => {
+      if (!byDate[row.date]) byDate[row.date] = [];
+      byDate[row.date].push(row);
+    });
+
+    list.innerHTML = '';
+    Object.keys(byDate).sort((a,b) => b.localeCompare(a)).forEach(date => {
+      const dayEl = document.createElement('div');
+      dayEl.className = 'archive-day';
+      const d = new Date(date + 'T12:00:00');
+      const label = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+      dayEl.innerHTML = `<div class="archive-day-header">${label.toUpperCase()}</div>`;
+
+      byDate[date].forEach(task => {
+        const statusCls = STATUS_OPTIONS.find(s => s.value === task.status)?.cls || 'status-on-hold';
+        const statusLabel = STATUS_OPTIONS.find(s => s.value === task.status)?.label || task.status;
+        const taskEl = document.createElement('div');
+        taskEl.className = 'archive-task';
+        taskEl.innerHTML = `
+          <span style="color:${task.completed ? 'var(--text-muted)' : 'var(--text-dim)'}; ${task.completed ? 'text-decoration:line-through;' : ''}">
+            ${task.completed ? '✓' : '○'}
+          </span>
+          <span class="archive-task-name">${escHtml(task.name)}</span>
+          <span class="status-badge ${statusCls}">${statusLabel}</span>
+          ${task.notes ? `<span title="${escHtml(task.notes)}" style="cursor:help; color:var(--text-muted); font-size:12px;">📝</span>` : ''}
+        `;
+        dayEl.appendChild(taskEl);
+      });
+
+      list.appendChild(dayEl);
+    });
+  } catch (e) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-text">Error loading archive</div></div>';
+    console.error(e);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════════════
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    const names = ['today','archive','settings'];
+    t.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(`panel-${name}`).classList.add('active');
+
+  if (name === 'archive') loadArchive();
+}
+
+// ═══════════════════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════════════════
+function updateConnection() {
+  const url = document.getElementById('settingsUrl').value.trim().replace(/\/$/, '');
+  const key = document.getElementById('settingsKey').value.trim();
+  if (!url || !key) { showToast('Fill in both fields'); return; }
+  SUPABASE_URL = url;
+  SUPABASE_KEY = key;
+  localStorage.setItem('revolve_url', url);
+  localStorage.setItem('revolve_key', key);
+  showToast('Connection updated');
+  loadTasks();
+}
+
+// ═══════════════════════════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════════════════════════
+function showLoading(show) {
+  document.getElementById('loadingBar').style.display = show ? 'block' : 'none';
+}
+
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+
+if (loadCredentials()) {
+  launchApp();
+} else {
+  document.getElementById('setupOverlay').style.display = 'flex';
+}
+</script>
+</body>
+</html>
