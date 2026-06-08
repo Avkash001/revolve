@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <meta name="apple-mobile-web-app-title" content="Revolve"/>
@@ -48,8 +48,14 @@
       font-family: 'Inter', -apple-system, sans-serif;
       font-size: 14px;
       min-height: 100vh;
+      min-height: -webkit-fill-available;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      min-height: -webkit-fill-available;
       -webkit-font-smoothing: antialiased;
       overflow-x: hidden;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
 
     body::before {
@@ -81,12 +87,12 @@
       z-index: 1;
       max-width: 680px;
       margin: 0 auto;
-      padding: 0 16px 100px;
+      padding: 0 max(16px, env(safe-area-inset-left)) max(100px, calc(80px + env(safe-area-inset-bottom))) max(16px, env(safe-area-inset-right));
     }
 
     /* ── HEADER ── */
     .header {
-      padding: 36px 0 20px;
+      padding: max(36px, calc(20px + env(safe-area-inset-top))) 0 20px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -593,7 +599,7 @@
 
     /* ── SETUP ── */
     .setup-overlay {
-      position: fixed; inset: 0; background: var(--bg);
+      position: fixed; inset: 0; background: var(--bg); padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom);
       z-index: 100; display: flex; align-items: center;
       justify-content: center; padding: 24px;
     }
@@ -654,7 +660,7 @@
       background: var(--card);
       border: 1px solid var(--border2);
       border-radius: 20px 20px 16px 16px;
-      padding: 28px 24px 36px;
+      padding: 28px 24px max(36px, calc(20px + env(safe-area-inset-bottom)));
       max-width: 480px; width: 100%;
       animation: sheetup 0.2s ease;
       max-height: 90vh;
