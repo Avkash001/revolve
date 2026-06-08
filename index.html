@@ -28,7 +28,7 @@
     body{background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,sans-serif;font-size:14px;min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;}
     body::before{content:'';position:fixed;top:-40%;left:-20%;width:70%;height:70%;background:radial-gradient(ellipse,rgba(79,142,247,0.06) 0%,transparent 70%);pointer-events:none;z-index:0;}
     body::after{content:'';position:fixed;bottom:-30%;right:-10%;width:50%;height:50%;background:radial-gradient(ellipse,rgba(61,232,152,0.04) 0%,transparent 70%);pointer-events:none;z-index:0;}
-    .app{position:relative;z-index:1;max-width:680px;margin:0 auto;padding:0 16px 100px;}
+    .app{position:relative;z-index:1;max-width:680px;margin:0 auto;padding:0 16px 60px;}
     /* Header */
     .header{padding:36px 0 20px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;}
     .header-left{flex:1;min-width:0;}
@@ -99,6 +99,9 @@
     .s-on-hold{background:var(--gray-soft);color:var(--gray);}
     .repeat-tag{font-size:10px;font-weight:500;color:var(--text-muted);}
     .time-tag{font-size:10px;font-weight:600;color:var(--accent);}
+    .due-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:rgba(245,200,66,0.12);color:var(--yellow);}
+    .due-badge.overdue{background:rgba(247,111,111,0.15);color:var(--red);}
+    .due-badge.today{background:rgba(79,142,247,0.15);color:var(--blue);}
     .task-actions{display:flex;gap:2px;opacity:0;transition:opacity 0.15s;}
     .task-card:hover .task-actions{opacity:1;}
     .icon-btn{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:var(--r-xs);background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;transition:all 0.15s;}
@@ -178,7 +181,7 @@
     /* Mobile safe areas - iPhone only */
     @supports (padding: max(0px)) {
       @media (max-width: 600px) {
-        .app{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right));padding-bottom:max(100px,calc(80px + env(safe-area-inset-bottom)));}
+        .app{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right));padding-bottom:calc(60px + env(safe-area-inset-bottom));}
         .header{padding-top:max(36px,calc(env(safe-area-inset-top) + 16px));}
         .setup-overlay{padding-top:max(48px,calc(env(safe-area-inset-top) + 24px));padding-bottom:max(48px,calc(env(safe-area-inset-bottom) + 24px));padding-left:max(24px,env(safe-area-inset-left));padding-right:max(24px,env(safe-area-inset-right));}
         .modal-sheet{padding-bottom:max(36px,calc(env(safe-area-inset-bottom) + 20px));}
@@ -257,6 +260,10 @@ CREATE POLICY "Allow all" ON clients FOR ALL USING (true) WITH CHECK (true);</di
         <option value="completed">Completed</option>
         <option value="on-hold">On Hold</option>
       </select>
+    </div>
+    <div class="modal-row">
+      <div class="field-label">Due Date &amp; Time <span style="font-weight:400;text-transform:none;color:var(--text-muted);">(optional)</span></div>
+      <input class="field" type="datetime-local" id="modalDueDate"/>
     </div>
     <div class="toggle-row">
       <div><div class="toggle-info-title">Repeat</div><div class="toggle-info-sub">Auto-add on selected days with notification</div></div>
@@ -590,6 +597,7 @@ function openNewTaskModal(){
   document.getElementById('quickAddField').value='';
   document.getElementById('modalStatus').value='in-progress';
   document.getElementById('modalTime').value='';
+  document.getElementById('modalDueDate').value='';
   rOn=false;rType='daily';rDays=new Set();
   syncRepeatUI();
   document.getElementById('taskModal').style.display='flex';
@@ -603,6 +611,7 @@ function openEditModal(id){
   document.getElementById('modalName').value=t.name;
   document.getElementById('modalStatus').value=t.status;
   document.getElementById('modalTime').value=t.repeat_time||'';
+  document.getElementById('modalDueDate').value=t.due_date||'';
   rOn=t.repeat_type&&t.repeat_type!=='none';
   rType=t.repeat_type==='days'?'days':'daily';
   rDays=new Set((t.repeat_days||'').split(',').filter(Boolean).map(Number));
@@ -640,15 +649,16 @@ async function saveTaskModal(){
   const rt=rOn?(rType==='days'?'days':'daily'):'none';
   const rd=rOn&&rType==='days'?[...rDays].sort().join(','):'';
   const rtime=rOn?(document.getElementById('modalTime').value||''):'';
+  const dueDate=document.getElementById('modalDueDate').value||'';
   if(editId){
     const t=tasks.find(x=>x.id===editId);
     if(t)Object.assign(t,{name,status,repeat_type:rt,repeat_days:rd,repeat_time:rtime});
-    try{await sb('tasks?id=eq.'+editId,{method:'PATCH',body:JSON.stringify({name,status,repeat_type:rt,repeat_days:rd,repeat_time:rtime})});renderTasks();updateChart();scheduleNotifs();showToast('Updated');}
+    try{await sb('tasks?id=eq.'+editId,{method:'PATCH',body:JSON.stringify({name,status,repeat_type:rt,repeat_days:rd,repeat_time:rtime,due_date:dueDate})});renderTasks();updateChart();scheduleNotifs();showToast('Updated');}
     catch(e){showToast('Error');console.error(e);}
   }else{
     const max=tasks.reduce((m,t)=>Math.max(m,t.sort_order||0),0);
     try{
-      const[nt]=await sb('tasks',{method:'POST',prefer:'return=representation',body:JSON.stringify({name,status,completed:false,recurring:rt!=='none',repeat_type:rt,repeat_days:rd,repeat_time:rtime,notes:'',sort_order:max+1,date:today(),archived:false,client_id:curClient})});
+      const[nt]=await sb('tasks',{method:'POST',prefer:'return=representation',body:JSON.stringify({name,status,completed:false,recurring:rt!=='none',repeat_type:rt,repeat_days:rd,repeat_time:rtime,due_date:dueDate,notes:'',sort_order:max+1,date:today(),archived:false,client_id:curClient})});
       tasks.push(nt);renderTasks();updateChart();scheduleNotifs();showToast('Added');
     }catch(e){showToast('Error');console.error(e);}
   }
@@ -674,6 +684,16 @@ function renderTasks(){
   sorted.forEach(t=>list.appendChild(buildCard(t)));
 }
 
+function formatDue(dt){
+  if(!dt)return null;
+  const d=new Date(dt),now=new Date();
+  const time=d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  const dateStr=d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  if(d<now)return{cls:'due-badge overdue',label:'Overdue'};
+  if(d.toDateString()===now.toDateString())return{cls:'due-badge today',label:'Today '+time};
+  if(d.toDateString()===new Date(now.getTime()+86400000).toDateString())return{cls:'due-badge',label:'Tomorrow '+time};
+  return{cls:'due-badge',label:dateStr+' '+time};
+}
 function buildCard(t){
   const el=document.createElement('div');
   el.className='task-card'+(t.completed?' done':'')+(t.repeat_type&&t.repeat_type!=='none'?' repeating':'');
@@ -694,7 +714,7 @@ function buildCard(t){
         '<div class="task-name" ondblclick="openEditModal(\''+t.id+'\')">'+escH(t.name)+'</div>'+
         '<div class="task-tags">'+
           '<select class="status-chip '+sc+'" onchange="updateStatus(\''+t.id+'\',this.value)">'+opts+'</select>'+
-          repeatTag+timeTag+
+          repeatTag+timeTag+(t.due_date?(()=>{const f=formatDue(t.due_date);return f?'<span class="'+f.cls+'">'+f.label+'</span>':'';})():'')+
         '</div>'+
       '</div>'+
       '<div class="task-actions">'+
@@ -705,6 +725,7 @@ function buildCard(t){
       '</div>'+
     '</div>'+
     '<div class="task-expand'+(isOpen?' open':'')+'" id="exp-'+t.id+'">'+
+      (t.due_date?'<div style="margin-bottom:10px;"><div class="exp-label">Due</div><div style="font-size:12px;font-weight:500;color:var(--text-dim);">'+new Date(t.due_date).toLocaleString('en-US',{weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})+'</div></div>':'')+
       '<div class="exp-label">Notes</div>'+
       '<textarea class="notes-field" placeholder="Add notes, timestamps..." oninput="qNote(\''+t.id+'\',this.value)">'+escH(t.notes||'')+'</textarea>'+
     '</div>';
