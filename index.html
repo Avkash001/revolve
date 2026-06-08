@@ -92,7 +92,7 @@
 
     /* ── HEADER ── */
     .header {
-      padding: max(36px, calc(20px + env(safe-area-inset-top))) 0 20px;
+      padding: max(52px, calc(env(safe-area-inset-top) + 20px)) 0 20px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -599,12 +599,17 @@
 
     /* ── SETUP ── */
     .setup-overlay {
-      position: fixed; inset: 0; background: var(--bg); padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom);
-      z-index: 100; display: flex; align-items: center;
-      justify-content: center; padding: 24px;
+      position: fixed; inset: 0; background: var(--bg);
+      z-index: 100;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-top: max(48px, calc(env(safe-area-inset-top) + 24px));
+      padding-bottom: max(48px, calc(env(safe-area-inset-bottom) + 24px));
+      padding-left: max(24px, env(safe-area-inset-left));
+      padding-right: max(24px, env(safe-area-inset-right));
     }
 
-    .setup-box { max-width: 460px; width: 100%; }
+    .setup-box { max-width: 460px; width: 100%; margin: 0 auto; }
 
     .setup-wordmark {
       font-size: 40px; font-weight: 800; letter-spacing: -1.5px;
