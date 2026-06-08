@@ -653,17 +653,21 @@ async function saveTaskModal(){
   const dueDate=document.getElementById('modalDueDate').value||'';
   if(editId){
     const t=tasks.find(x=>x.id===editId);
-    if(t)Object.assign(t,{name,status,repeat_type:rt,repeat_days:rd,repeat_time:rtime});
-    try{await sb('tasks?id=eq.'+editId,{method:'PATCH',body:JSON.stringify({name,status,repeat_type:rt,repeat_days:rd,repeat_time:rtime,due_date:dueDate})});renderTasks();updateChart();scheduleNotifs();showToast('Updated');}
-    catch(e){showToast('Error');console.error(e);}
+    // Update local task including due_date so card re-renders correctly
+    if(t)Object.assign(t,{name,status,repeat_type:rt,repeat_days:rd,repeat_time:rtime,due_date:dueDate});
+    try{
+      await sb('tasks?id=eq.'+editId,{method:'PATCH',body:JSON.stringify({name,status,repeat_type:rt,repeat_days:rd,repeat_time:rtime,due_date:dueDate})});
+      renderTasks();updateChart();scheduleNotifs();showToast('Updated');
+      closeTaskModal();
+    }catch(e){showToast('Error saving — check connection');console.error(e);}
   }else{
     const max=tasks.reduce((m,t)=>Math.max(m,t.sort_order||0),0);
     try{
       const[nt]=await sb('tasks',{method:'POST',prefer:'return=representation',body:JSON.stringify({name,status,completed:false,recurring:rt!=='none',repeat_type:rt,repeat_days:rd,repeat_time:rtime,due_date:dueDate,notes:'',sort_order:max+1,date:today(),archived:false,client_id:curClient})});
       tasks.push(nt);renderTasks();updateChart();scheduleNotifs();showToast('Added');
-    }catch(e){showToast('Error');console.error(e);}
+      closeTaskModal();
+    }catch(e){showToast('Error saving — check connection');console.error(e);}
   }
-  closeTaskModal();
 }
 
 // ── TASKS ──
