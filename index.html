@@ -1543,6 +1543,7 @@ function buildCard(t) {
       '</div>' +
       '<div class="task-actions">' +
         '<button class="icon-btn" onclick="toggleExpand(\'' + t.id + '\')" title="Notes">' + (isOpen ? '↑' : '↓') + '</button>' +
+        '<button class="icon-btn" onclick="openEditModal(\'' + t.id + '\')" title="Edit">✎</button>' +
         '<button class="icon-btn" onclick="archiveOne(\'' + t.id + '\')" title="Archive" style="font-size:12px;">○</button>' +
         '<button class="icon-btn" onclick="delTask(\'' + t.id + '\')" title="Delete" style="color:var(--red);">✕</button>' +
       '</div>' +
@@ -1731,6 +1732,7 @@ async function loadArchive() {
         const sl = STATUSES.find(s => s.v === t.status)?.l || t.status;
         const r  = document.createElement('div');
         r.className = 'archive-row';
+        const archiveId = t.id || '';
         r.innerHTML =
           '<span style="color:' + (t.completed ? 'var(--green)' : 'var(--text-muted)') + ';">' +
             (t.completed ? '✓' : '○') +
@@ -1739,7 +1741,13 @@ async function loadArchive() {
             escH(t.name) +
           '</span>' +
           '<span class="status-chip ' + sc + '" style="cursor:default;">' + sl + '</span>' +
-          (t.notes ? '<span title="' + escH(t.notes) + '" style="cursor:help;font-size:12px;">📝</span>' : '');
+          (t.notes ? '<span title="' + escH(t.notes) + '" style="cursor:help;font-size:12px;">📝</span>' : '') +
+          (archiveId ? 
+            '<div style="display:flex;gap:4px;flex-shrink:0;">' +
+              '<button class="icon-btn" onclick="restoreTask(\'' + archiveId + '\')" title="Restore to today" style="color:var(--green);opacity:0.7;font-size:12px;">↩</button>' +
+              '<button class="icon-btn" onclick="delArchivedTask(\'' + archiveId + '\')" title="Delete permanently" style="color:var(--red);opacity:0.6;font-size:12px;">✕</button>' +
+            '</div>'
+          : '');
         g.appendChild(r);
       });
       list.appendChild(g);
@@ -1748,6 +1756,28 @@ async function loadArchive() {
     list.innerHTML = '<div class="empty"><div class="empty-title">Error loading archive</div></div>';
     console.error(e);
   }
+}
+
+async function delArchivedTask(id) {
+  if (!confirm('Permanently delete this archived task?')) return;
+  try {
+    await sbFetch('tasks?id=eq.' + id, { method: 'DELETE' });
+    showToast('Deleted');
+    loadArchive();
+  } catch(e) { showToast('Error deleting'); console.error(e); }
+}
+
+async function restoreTask(id) {
+  try {
+    await sbFetch('tasks?id=eq.' + id, {
+      method: 'PATCH',
+      body: JSON.stringify({ archived: false, completed: false, date: today() })
+    });
+    showToast('Restored to today');
+    loadArchive();
+    // If we're looking at the right client, also refresh today's tasks
+    await loadTasks();
+  } catch(e) { showToast('Error restoring'); console.error(e); }
 }
 
 // ── TABS ───────────────────────────────────────────────────
