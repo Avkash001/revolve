@@ -1171,6 +1171,7 @@ async function switchClient(id) {
   syncClientLabel();
   showLoader(true);
   try {
+    await carryOverTasks();
     await ensureRepeat();
     await loadTasks();
     await loadDailyNotes();
@@ -1248,6 +1249,26 @@ async function rmClient(id) {
     if (curClient === 'default') await switchClient('default');
     showToast(c.name + ' removed');
   } catch(e) { showToast('Error'); console.error(e); }
+}
+
+// ── CARRY OVER TASKS ───────────────────────────────────────
+// Any non-archived, non-repeating task from a previous day gets re-dated to today.
+// This runs silently on launch and client switch before loadTasks().
+async function carryOverTasks() {
+  const t = today();
+  // Fetch all non-archived tasks for this client that are NOT from today
+  const old = await sbFetch(
+    'tasks?archived=eq.false&client_id=eq.' + curClient +
+    '&date=neq.' + t + '&order=created_at.asc'
+  ) || [];
+  if (!old.length) return;
+  // Re-date them all to today in parallel
+  await Promise.all(old.map(task =>
+    sbFetch('tasks?id=eq.' + task.id, {
+      method: 'PATCH',
+      body: JSON.stringify({ date: t })
+    }).catch(e => console.error('carryOver patch failed for', task.id, e))
+  ));
 }
 
 // ── REPEAT / NOTIFICATIONS ─────────────────────────────────
@@ -1708,7 +1729,7 @@ async function loadArchive() {
   try {
     const rows = await sbFetch(
       'tasks?archived=eq.true&client_id=eq.' + curClient +
-      '&order=date.desc&select=date,name,status,completed,notes'
+      '&order=date.desc&select=id,date,name,status,completed,notes'
     ) || [];
     if (!rows.length) {
       list.innerHTML = '<div class="empty"><div class="empty-title">Nothing archived yet</div></div>';
@@ -1836,6 +1857,7 @@ async function launch() {
     if (!clients.find(c => c.id === curClient)) curClient = 'default';
     renderClientBar();
     syncClientLabel();
+    await carryOverTasks();
     await ensureRepeat();
     await loadTasks();
     await loadDailyNotes();
